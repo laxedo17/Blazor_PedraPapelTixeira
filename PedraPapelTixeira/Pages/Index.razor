@@ -1,0 +1,101 @@
+﻿@page "/"
+@using System.Timers
+@using PedraPapelTixeira.Helpers
+@implements IDisposable
+
+<h1>Xogo do pedra papel tixeira</h1>
+@if (!string.IsNullOrEmpty(mensaxeResultado))
+{
+    <h3 style="color: @mensaxeResultado_css">@mensaxeResultado</h3>
+}
+
+<button class="btn btn-info" @onclick="XogarDeNovo">Xogar de novo</button>
+
+<div class="xogo">
+    <img src="@tiradaOponente.Imaxe" class="imaxe">
+</div>
+
+<div class="usuario">
+    @foreach (var tirada in tiradas)
+    {
+        <img src="@tirada.Imaxe" class="imaxe imaxe-seleccionable" @onclick="@(() => SeleccionarTirada(tirada) )">
+    }
+</div>
+
+@code {
+    List<Tirada> tiradas = new List<Tirada>()
+{
+new Tirada{Eleccion = OpcionPPT.Papel, PerdeContra = OpcionPPT.Tixeira, GanaContra=OpcionPPT.Pedra, Imaxe="papel.jpg"},
+
+new Tirada{Eleccion = OpcionPPT.Pedra, PerdeContra = OpcionPPT.Papel, GanaContra=OpcionPPT.Tixeira, Imaxe="pedra.jpg"},
+
+new Tirada{Eleccion = OpcionPPT.Tixeira, PerdeContra = OpcionPPT.Pedra, GanaContra = OpcionPPT.Papel,
+Imaxe="tixeira.jpg"}
+};
+
+    Timer temporizador;
+    Tirada tiradaOponente;
+    string mensaxeResultado = string.Empty;
+    string mensaxeResultado_css = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        tiradaOponente = tiradas[0]; //a primeira tirada
+        temporizador = new Timer();
+        temporizador.Interval = 100;
+        //cada 500 milisegundo executase o metodo de abaixo
+        temporizador.Elapsed += TemporizadorEnElapsed;
+        temporizador.Start();
+    }
+
+    int indiceTiradaOponente = 0; //a primeira
+
+    private void TemporizadorEnElapsed(object sender, ElapsedEventArgs e)
+    {
+        //a tirada sera ou 0 ou 1 ou 2, 0, 1, 2, e iterara seguido sobre a lista de tiradas
+        indiceTiradaOponente = (indiceTiradaOponente + 1) % tiradas.Count;
+        tiradaOponente = tiradas[indiceTiradaOponente];
+        StateHasChanged(); //permite a Blazor saber que algo cambiou
+    }
+
+    public void Dispose()
+    {
+        if (temporizador != null)
+        {
+            temporizador.Dispose();
+        }
+    }
+
+    private void SeleccionarTirada(Tirada tirada)
+    {
+        temporizador.Stop();
+        var resultado = tirada.XogaContra(tiradaOponente);
+
+        if (resultado == XogoStatus.Victoria)
+        {
+            mensaxeResultado = "Ganaches, tes unha mente privilexiada";
+            mensaxeResultado_css = "green";
+        }
+        else if (resultado == XogoStatus.Derrota)
+        {
+            mensaxeResultado = "Perdiches, a vida e conflicto";
+            mensaxeResultado_css = "red";
+        }
+        else
+        {
+            mensaxeResultado = "Empate, a CPU para ti e batible, pero ten dias";
+            mensaxeResultado_css = "black";
+
+        }
+    }
+
+    private void XogarDeNovo()
+    {
+        temporizador.Start();
+        mensaxeResultado = string.Empty;
+    }
+
+}
+
+#pragma restore 1998
+#nullable restore
